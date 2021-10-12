@@ -1,5 +1,4 @@
 library(leaflet)
-library(shinydashboard)
 library(tidyverse)
 library(readxl)
 library(sf)
@@ -23,10 +22,11 @@ df_sal <- readRDS("df_dep_sal.rds")
 df_pop <- readRDS("df_dep_pop.rds")
 deps <- rgdal::readOGR("departements.geojson")
 df_depcom <- readRDS("df_depcom.rds")
-departments_unemployement_rate <- readRDS("departments_unempolyment_rate.rds")
+#departments_unemployement_rate <- readRDS("departments_unempolyment_rate.rds")
 unemployement <- readRDS("unemployement.rds")
-########################## Data preparation ######################
+departments_age <- readRDS("departments_age.rds")
 
+########################## Data preparation ######################
 coords <- coords %>% 
   mutate(code = as.factor(code),
          DEP_NAME = as.factor(DEP_NAME)) %>% 
@@ -34,6 +34,9 @@ coords <- coords %>%
 
 df_sal <- df_sal %>% 
   rename(nom = LIBGEO) %>% 
+  mutate(nom = as.factor(nom))
+
+deps <-  deps %>% 
   mutate(nom = as.factor(nom))
 
 #selecting whatever is needed from result dataset
@@ -65,135 +68,19 @@ df3 <- df2 %>% group_by(DEP_NAME) %>%
          percent_vote = votep / total_votes) %>% 
   summarise(percent_vote = min(percent_vote)) %>% 
   mutate(first_cand = LastName[which.max(percent_vote)]) %>% 
-  mutate(firstcand_dep = max(percent_vote))
-
-
-
-
-###########################starting the ui section ######################
-
-# ui <- fluidPage(
-#   
-#   #aesthetic
-#   theme = shinytheme("united"),
-#   titlePanel("Exploring 2017 French Election Data"),
-#   hr(),
-#   sidebarLayout(
-#     sidebarPanel(
-#       fluidRow(
-#         #h4(div(HTML("<em> Select a candidate: </em>"))),
-#       ,     
-#         plotlyOutput("view2"), 
-#       ),
-#     ),
-#     
-#     
-#     
-#     # Main panel for displaying outputs ----
-#     mainPanel(
-#       navbarPage(
-#         "",
-#         tabPanel(
-#           "Mapping",
-#           tags$style(
-#             type = "text/css", "html, body {width:100%;height:100%}",
-#             ".leaflet .legend i{
-#       border-radius: 50%;
-#       width: 10px;
-#       height: 10px;
-#       margin-top: 4px;
-#       }
-#     "
-#           ),
-#           leafletOutput("view"), 
-#           hr(),
-#           
-#           #action button and bsModal are working together      ########
-#           #actionButton("go", "Plot"),
-#           # textOutput("temp"),
-#           # tableOutput("view"),
-#           # Output: HTML table with requested number of observations ---
-#           #bsModal("modalExample", "Something", "go", size = "large", plotlyOutput("plot")),
-#           # plotOutput("plot")
-#           #br(), #space between the texts and maps
-#           
-#           
-#         ) # End of main panel, unja bade parantez virgul bud vaghti about ro dashtim
-#         
-#         # tabPanel(
-#         #  "About",
-#         #  fluidPage(
-#         #    fluidRow(
-#         #     #p("This app is developed for comparing traffic patterns in Ireland between different time periods and uses data from", span("https://www.nratrafficdata.ie/.", style = "color:blue")),
-#         #      #p("Note that there could be some issues with the data such as missing values and etc. Feel free to use the 'Plot' button and observe the data in more detail.")
-#         #    )
-#         #   )
-#         # )
-#       )
-#     )
-#   )
-# )
-
-
-
-
-
-ui <- dashboardPage(
-  dashboardHeader(title = "French Election"),
-  dashboardSidebar(
-                   fluidRow(
-                     column(width = 12,
-                            selectInput(
-                              "candidate", "Choose a candidate:",
-                              c("Marine LE PEN"  = "LE PEN" ,
-                                "Jean-Luc MÉLENCHON" = "MÉLENCHON"   ,  
-                                "Emmanuel MACRON"   = "MACRON"   , 
-                                "François FILLON"   = "FILLON"   ,  
-                                "Nicolas DUPONT-AIGNAN" = "DUPONT-AIGNAN", 
-                                "Jean LASSALLE" = "LASSALLE"     ,
-                                "Benoît HAMON" = "HAMON"        ,
-                                "François ASSELINEAU" = "ASSELINEAU" ,  
-                                "Philippe POUTOU" =  "POUTOU",
-                                "Nathalie ARTHAUD" = "ARTHAUD",
-                                "Jacques CHEMINADE" = "CHEMINADE")
-                            )
-                     )
-                   )
-  ),
-  
-  
-  dashboardBody(
-    # Boxes need to be put in a row (or column)
-    fluidRow(
-      
-      
-      leafletOutput("view", height = 400),#main map 
-      
-      box(#barchart candidates
-        plotlyOutput("view2", width = 500), width = 1000
-      )
-      
-    )
-  )
-)
-
-
+  mutate(firstcand_dep = max(percent_vote)) %>% 
+  mutate(firstcand_dep = round(firstcand_dep*100))
 
 
 
 
 ######################### starting the server section #########################
 
-server <- function(input, output) {
-  
-  ################starting reactive part 1
-  output$view <- renderLeaflet({ #pay attention to what is the type of plot (main plot)
-    
-    
+
     
     #merging and mapping
     df_color <- df3 %>% mutate(percent_vote = floor(percent_vote * 100)) #fixing the color palette for each candidate
-    df_map <- df3 %>% filter(LastName == input$candidate) %>%  #user's input for example: "MACRON" instead of input$candidate
+    df_map <- df3 %>% filter(LastName == "MACRON") %>%  #user's input for example: "MACRON" instead of input$candidate
       rename(nom = DEP_NAME) %>% 
       mutate(nom = as.factor(nom))
     
@@ -206,34 +93,32 @@ server <- function(input, output) {
       df_map,
       coords,
       df_sal,
-      df_pop
-      #departments_unemployement_rate,
+      df_pop,
+      departments_age
     ) %>% 
       reduce(left_join)
-    
+  
     df_merged <- df_merged %>% mutate(code = str_remove(code, "^0+")) %>% 
       left_join(., unemployement, by= "code")
     
     #map
     pal <- colorBin("magma", df_color$percent_vote, 8, pretty = FALSE)
     #pal <- colorNumeric("Purples", domain = df_color$percent_vote) #choosing the color palette for the main plot
-    pal2 <- colorFactor(palette = c("#AA0000", "#057C85", "#808080" ,"#0087cd", "#0066CC",
-                                    "#ed1651", "#ADC1FD", "#004A77", "#FFD600", "#C9462C", "Snow3"), 
+    pal2 <- colorFactor(palette =  c("#AA0000", "#057C85", "#808080" ,"#0087cd", "#0066CC",
+                                     "#ed1651", "#ADC1FD", "#004A77", "#FFD600", "#C9462C", "Snow3"), 
                         levels = c("ARTHAUD", "ASSELINEAU", "CHEMINADE", "DUPONT-AIGNAN", "FILLON", 
-                                   "HAMON", "LASSALLE", "LE PEN", "MACRON", "MÉLENCHON", "POUTOU"))
+                                   "HAMON", "LASSALLE", "LE PEN", "MACRON", "MÉLENCHON", "#C0081F"))
+    pal3 <- colorBin("viridis", df_merged$unemployment_rate, 5, pretty = FALSE)
     
-    
-    pal3 <- colorBin("inferno", df_merged$unemployment_rate, 4, pretty = T)    
     #making popups on the map (paste0 can get both variables and words)
     df4 <- df_merged %>% 
       mutate(pop1 = paste0(df_merged$percent_vote,"% at ", df_merged$nom),
              pop2 = paste0(df_merged$nom," population: ", df_merged$pop, " (x1000)"),
              pop3= paste0(df_merged$first_cand, "is the first selected candidate at ", df_merged$nom),
              pop4 = paste0(round(df_merged$firstcand_dep * 100, 1), "% at ", df_merged$nom),
-             pop5 = paste0("Unemployment Rate: ", round(df_merged$unemployment_rate, 1), "% at ", df_merged$nom))
+             pop5 = paste0("unemployment rate: ", round(df_merged$unemployment_rate, 1), "% at ", df_merged$nom))
     
-    popup_sb <- df4$pop1
-    #df_merged$nom2 <- df_merged$nom
+
     #mitubi az popup_sb estefade nakonio be jash hamun df4$pop1 ro bzari
     
     leaflet() %>%
@@ -245,7 +130,7 @@ server <- function(input, output) {
                        ~ SNHM14, fillOpacity = 0.7 ,color = "orange", 
                        popup = ~paste0("Average Salary: " ,round(SNHM14, 1), " €/hr at ", df_merged$nom),
                        stroke = F, group = "Mean Wage") %>%
-       addPolygons(data = df_merged, fillColor = ~pal(df_merged$percent_vote), layerId= ~nom,
+      addPolygons(data = df_merged, fillColor = ~pal(df_merged$percent_vote), layerId= ~nom,
                   fillOpacity = 0.7,
                   group = "Votes",
                   weight = 0.2,
@@ -255,12 +140,12 @@ server <- function(input, output) {
                     color = "#666",
                     fillOpacity = 0.2,
                     bringToFront = TRUE),
-                  label=popup_sb,
+                  label=df4$pop1,
                   labelOptions = labelOptions(
                     style = list("font-weight" = "normal", padding = "3px 8px"),
                     textsize = "15px",
                     direction = "auto"))  %>%
-       addPolygons(data = df_merged, fillColor = ~pal2(df_merged$first_cand), #layerId= ~nom2,
+      addPolygons(data = df_merged, fillColor = ~pal2(df_merged$first_cand), #layerId= ~nom2,
                   fillOpacity = 0.7,
                   group = "First Candidate",
                   weight = 0.2,
@@ -289,58 +174,123 @@ server <- function(input, output) {
                   labelOptions = labelOptions(
                     style = list("font-weight" = "normal", padding = "3px 8px"),
                     textsize = "15px",
-                    direction = "auto")) %>%
+                    direction = "auto")) %>% 
       addLegend(pal = pal, group = "Votes" , values = df_merged$percent_vote, title = "Vote %", opacity = 0.7,
                 labFormat = labelFormat(suffix = " %")) %>%
       addLegend(pal = pal3, group = "Unemployment Rate" , values = df_merged$unemployment_rate, title = "Unemployment Rate %", opacity = 0.7,
                 labFormat = labelFormat(suffix = " %")) %>%
       addLegend(pal = pal2, group = "First Candidate" , values = df_merged$first_cand, opacity = 0.7) %>%
-    addLayersControl(
+      addLayersControl(
         overlayGroups = c("Population","Mean Wage", "Votes", "First Candidate", "Unemployment Rate"),
-        options = layersControlOptions(collapsed = T),
-        position = "bottomleft"
+        position = "bottomleft",
+        options = layersControlOptions(collapsed = T)
       ) %>% hideGroup(c("Population","Mean Wage", "First Candidate", "Unemployment Rate"))
     
     
-  }) 
+
   ##################end of reactive part 1
   
   
   ################starting reactive part 2  
   
   #bar chart for dep 1
-  output$view2 <- renderPlotly({
-    
-    #location <- ifelse(is.null(input$view_marker_click$lng),
-    #                  input$view_shape_click$id, 
-    #                  as.character(coords$nom[which(coords$longitude == input$view_marker_click$lng)])
-    #                  )
-    #
-    
-    req(!is.na(input$view_shape_click$id))
-    location <- input$view_shape_click$id #yani jayi ke karbar rush click mikone tu naghshe
+
+
     
     
-    plot1 <- df3 %>% filter(DEP_NAME == location) %>% 
-      mutate(percent_vote =round(percent_vote * 100, 1), 
-             firstcand_dep =round(firstcand_dep * 100, 1)) %>% 
+    plot1 <- df3 %>% filter(DEP_NAME == "Ain") %>% 
+      mutate(percent_vote =round(percent_vote * 100, 1)) %>% 
       ggplot(aes(x = reorder(LastName, -percent_vote), y = percent_vote, fill=LastName, 
                  text = percent_vote)) + 
       geom_bar(stat = "identity") + 
       scale_fill_manual(values = c("#AA0000", "#057C85", "#808080" ,"#0087cd", "#0066CC",
                                    "#ed1651", "#ADC1FD", "#004A77", "#FFD600", "#C9462C", "Snow3"))+
       theme_minimal() +
-      ggtitle(paste0("Candidate Preference in ", location))+
+      ggtitle(paste0("Candidate Preference in ", "Ain") )+
       theme(axis.text.x = element_text(size = 7, face = "bold", angle = 45, margin = margin(t = 6)),
             legend.position = "none") +
       labs(x="Candidate", y="Vote %")
     
     ggplotly(plot1, tooltip = "text")
-    
-  }) %>% bindEvent(input$view_shape_click)
-  
-  
-}#end of server
 
-# Run the application
-shinyApp(ui = ui, server = server)
+ #######################################scatter plots aleki###################################################   
+    #scatter plot percent_vote vs average salary
+  df_merged %>%  
+    as.data.frame() %>% 
+      ggplot(aes(x=SNHM14, y=percent_vote)) + geom_point() + geom_smooth()+
+    theme_minimal() +
+    ggtitle(paste0("Vote% VS. Average Salary in ", "Ain ") ) +
+    labs(x="Average Salary", y="Vote %")
+  
+  #scatter plot percent_vote vs population
+    df_merged %>% 
+      as.data.frame() %>% 
+      ggplot(aes(x=pop, y=percent_vote)) + geom_point() + geom_smooth()+
+      theme_minimal() +
+      ggtitle(paste0("Vote% VS. Population in ", "Ain ") ) +
+      labs(x="Population", y="Vote %")
+    
+    
+    #scatter plot percent_vote vs unemployment_rate
+    df_merged %>% 
+      as.data.frame() %>% 
+      ggplot(aes(x=unemployment_rate, y=percent_vote)) + geom_point() + geom_smooth()+
+      theme_minimal() +
+      ggtitle(paste0("Vote% VS. Unemployment_Rate in ", "Ain ") ) +
+      labs(x="Unemployment_Rate", y="Vote %")
+
+    #######################################################################################    
+   
+     #scatter plot percent_vote vs age from: https://academic.oup.com/gerontologist/article/42/1/92/641498
+    
+    test <- df_merged %>% 
+      as.data.frame()  %>% 
+      mutate(age_category = ifelse(age== "20_24" | age== "25_29"|age== "30_34", "young adults",
+                                   ifelse(age== "35_39" | age== "40_44"|age== "45_49"| age== "50_54", "middle_aged adults",
+                                          "older adults"))) %>% 
+      group_by(nom, age_category) %>% 
+      summarise(ppl_in_age_cat = sum(people),
+                percent_vote = percent_vote,
+                average_age = average_age,
+                LastName= LastName) %>% 
+      group_by(nom) %>% 
+      mutate(perc_ppl_age_cat = ppl_in_age_cat / sum(ppl_in_age_cat),
+             mean1 = average_age * perc_ppl_age_cat)
+      
+    test1 <- test %>% 
+      group_by(nom) %>% 
+      summarise(mean_age = sum(mean1), 
+                percent_vote = mean(percent_vote)
+                ) %>% 
+      dplyr::select(nom, mean_age, percent_vote) 
+    
+    ggplot(data = test1, aes(x= mean_age, y= percent_vote))+geom_point()+
+      geom_smooth(method = "lm")+ theme_minimal() +
+      ggtitle(paste0("MACRON's" , " Vote% VS. Average Age ", "at ") )
+    
+    
+    
+    
+      
+  #  ggplot(data=test, aes(x=perc_ppl_age_cat, y=percent_vote, color=age_category)) + 
+   #   geom_point()+
+    #  geom_smooth(method= "lm", se=FALSE)
+   #it <- lm(percent_vote ~ perc_ppl_age_cat+age_category, data=test)
+   #est %>% 
+   # mutate(fit = fitted(fit)) %>%
+   # ggplot(aes(x=perc_ppl_age_cat, y=percent_vote, color=age_category)) + 
+   # geom_point(size=1)+  # points smalle
+   # geom_smooth(method=lm, se=F)+
+   # geom_line(aes(y=fit), linetype="twodash", size=1.5)
+    
+    
+    test %>% 
+     filter(age_category == "middle_aged adults") %>% 
+     ggplot(aes(x=perc_ppl_age_cat, y=percent_vote)) + geom_point() +
+     geom_smooth(method = "lm") 
+    #  labs(x= "percent of people between 20-24", y="percent of LE PEN's vote") +
+    #  theme_minimal() 
+      #ggtitle(paste0("Vote% VS. Unemployment_Rate in ", "Ain ") ) +
+      #labs(x="Age", y="Vote %")
+
+    

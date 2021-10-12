@@ -133,7 +133,7 @@ correspondance_code_insee_code_postal <- read_csv("correspondance-code-insee-cod
 df_dep_pop <- correspondance_code_insee_code_postal %>% 
   dplyr::select(Département, Population) %>% 
   rename(nom = Département, pop = Population) %>% 
-  mutate(nom = str_to_title(nom)) %>% 
+  mutate(nom = str_to_title(nom)) %>% #for making capital letters to small letters
   group_by(nom) %>% summarise(pop = sum(pop))
 
 #df_dep_pop <- saveRDS(df_dep_pop, file= "df_dep_pop.rds")
@@ -178,6 +178,105 @@ departments_unempolyment_rate <- df_unemps %>%
                                  summarise(unemployment_rate = sum(unemployment_rate, na.rm = T))
   
 
+#preparing unemployment data from https://losd-data.staging.derilinx.com/dataset/ilo-unemployment-rate-for-ages-15-74-by-nuts3-regions-france-quarterly
+unemployement <- read_csv("france-unemployement_rate-nuts3-quarterly.csv")
+
+unemployement <-unemployement %>% 
+  rename( code = Code, dep_name = nom) %>% 
+  mutate(dep_name = str_to_title(dep_name))  #for making capital letters to small letters
+
+#saveRDS(unemployement, file= "unemployement.rds")
+
+
+#preparing age data
+
+
+BTX_TD_MEN4_2014 <- read_excel("~/Desktop/Datasets/French Election/Data/BTX_TD_MEN4_2014.xls")
+
+df_ages <- BTX_TD_MEN4_2014 %>% #Note: Paris is not in the dataset
+  rowwise() %>% 
+  mutate('20_24' = round(sum(across(starts_with("AGEQ20_80020")), na.rm = T), 0),
+         '25_29' = round(sum(across(starts_with("AGEQ20_80025")))),
+         '30_34' = round(sum(across(starts_with("AGEQ20_80030")))),
+         '35_39' = round(sum(across(starts_with("AGEQ20_80035")))),
+         '40_44' = round(sum(across(starts_with("AGEQ20_80040")))),
+         '45_49' = round(sum(across(starts_with("AGEQ20_80045")))),
+         '50_54' = round(sum(across(starts_with("AGEQ20_80050")))),
+         '55_59' = round(sum(across(starts_with("AGEQ20_80055")))),
+         '60_64' = round(sum(across(starts_with("AGEQ20_80060")))),
+         '65_69' = round(sum(across(starts_with("AGEQ20_80065")))),
+         '70_74' = round(sum(across(starts_with("AGEQ20_80070")))),
+         '75_79' = round(sum(across(starts_with("AGEQ20_80075")))),
+         '80' = round(sum(across(starts_with("AGEQ20_80080"))))) %>%
+  dplyr::select(LIBGEO, '20_24',
+                '25_29',
+                '30_34',
+                '35_39',
+                '40_44',
+                '45_49',
+                '50_54',
+                '55_59',
+                '60_64',
+                '65_69',
+                '70_74',
+                '75_79',
+                '80')
+
+
+df_ages <- list( 
+  df_depcom,
+  df_ages
+  
+  ) %>% 
+  reduce(left_join) 
+
+
+departments_age <- df_ages %>% 
+  group_by(nom) %>% 
+  summarise(`20_24` = sum(`20_24`, na.rm = T),
+            `25_29` = sum(`25_29`, na.rm = T),
+            `30_34` = sum(`30_34`, na.rm = T),
+            `35_39` = sum(`35_39`, na.rm = T),
+            `40_44` = sum(`40_44`, na.rm = T),
+            `45_49` = sum(`45_49`, na.rm = T),
+            `50_54` = sum(`50_54`, na.rm = T),
+            `55_59` = sum(`55_59`, na.rm = T),
+            `60_64` = sum(`60_64`, na.rm = T),
+            `65_69` = sum(`65_69`, na.rm = T),
+            `70_74` = sum(`70_74`, na.rm = T),
+            `75_79` = sum(`75_79`, na.rm = T),
+            `80` = sum(`80`, na.rm = T)
+            )
+departments_age <- departments_age %>% 
+  pivot_longer(names_to = "age", values_to ="people" , -nom)
+
+
+new_age =  data.frame(age = unique(departments_age$age), 
+                      average_age = c(22,27,32,37,42,47,52,57,62,67,72,77,82))
+
+departments_age <- left_join(departments_age, new_age) 
+
+#saveRDS(departments_age, "departments_age.rds") 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #saveRDS(departments_unempolyment_rate, "departments_unempolyment_rate.rds")
 
 # calculating the labor force in each department
@@ -214,4 +313,3 @@ departments_unempolyment_rate <- df_unemps %>%
 #saveRDS(df_employ, "df_employ.rds")     
 
 
-         
