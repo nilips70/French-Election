@@ -10,6 +10,7 @@ library(plotly)
 library(shinyBS)
 library(stringr)
 library(shinythemes)
+library(shinycssloaders)
 library(purrr)
 rm(list=ls())
 
@@ -28,6 +29,7 @@ df_pop <- readRDS("df_dep_pop.rds")
 deps <- readRDS("departments.rds")
 #df_depcom <- readRDS("df_depcom.rds")
 unemployement <- readRDS("unemployement.rds")
+departments_age <- readRDS("departments_age.rds")
 ########################## Data preparation ######################
 
 coords <- coords %>% 
@@ -105,7 +107,7 @@ ui <- fluidPage(
                                ),
                         ),
                         mainPanel(
-                          leafletOutput("view", height = 500)
+                          leafletOutput("view", height = 500) %>% withSpinner(color = "#1E90FF")
                         )
                       )
              ),
@@ -133,7 +135,47 @@ ui <- fluidPage(
                                ),
                         ),
                         mainPanel(
-                          leafletOutput("view_c")
+                          leafletOutput("view_c", height = 500) %>% withSpinner(color = "#1E90FF")
+                        )
+                      )
+             ),
+             tabPanel("Scatter Plots",
+                      sidebarLayout(
+                        column(width = 2,
+                               fluidRow(
+                                 #h4(div(HTML("<em> Select a candidate: </em>"))),
+                                 selectInput(
+                                   "candidate_scatter_plot", "Choose a candidate:",
+                                   c("Marine LE PEN"  = "LE PEN" ,
+                                     "Jean-Luc MÉLENCHON" = "MÉLENCHON"   ,
+                                     "Emmanuel MACRON"   = "MACRON"   ,
+                                     "François FILLON"   = "FILLON"   ,
+                                     "Nicolas DUPONT-AIGNAN" = "DUPONT-AIGNAN",
+                                     "Jean LASSALLE" = "LASSALLE"     ,
+                                     "Benoît HAMON" = "HAMON"        ,
+                                     "François ASSELINEAU" = "ASSELINEAU" ,
+                                     "Philippe POUTOU" =  "POUTOU",
+                                     "Nathalie ARTHAUD" = "ARTHAUD",
+                                     "Jacques CHEMINADE" = "CHEMINADE")
+                                 ),
+                                 
+                               ),
+                        ),
+                        mainPanel(
+                          column(width = 6,
+                          plotlyOutput("view_scatter") %>% withSpinner(color = "#1E90FF"),
+                          hr()
+                          ),
+                          column(width = 6,
+                          plotlyOutput("view_scatter_age") %>% withSpinner(color = "#1E90FF"),
+                          hr()
+                          ),
+                          column(width = 6,
+                                 plotlyOutput("view_scatter_unemployment") %>% withSpinner(color = "#1E90FF")
+                          ),
+                          column(width = 6,
+                                 plotlyOutput("view_scatter_salary") %>% withSpinner(color = "#1E90FF")
+                          )
                         )
                       )
              )
@@ -213,7 +255,7 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   
-  ################starting reactive part 1
+  ################starting reactive part department map
   output$view <- renderLeaflet({ #pay attention to what is the type of plot (main plot)
     
     
@@ -321,7 +363,7 @@ server <- function(input, output) {
                 labFormat = labelFormat(suffix = " %")) %>%
       addLegend(pal = pal3, group = "Unemployment Rate" , values = df_merged$unemployment_rate, title = "Unemployment Rate %", opacity = 0.7,
                 labFormat = labelFormat(suffix = " %")) %>%
-      addLegend(pal = pal2, group = "First Candidate" , values = df_merged$first_cand, opacity = 0.7) %>%
+      addLegend(pal = pal2, group = "First Candidate" , values = df_merged$first_cand, title = "Candidate Name" ,opacity = 0.7) %>%
       addLayersControl(
         overlayGroups = c("Population","Mean Wage", "Votes", "First Candidate", "Unemployment Rate"),
         options = layersControlOptions(collapsed = T),
@@ -370,7 +412,7 @@ server <- function(input, output) {
  
   
   
-  ####################Communes##############
+  #################### Communes ##############
   output$view_c <- renderLeaflet({ #pay attention to what is the type of plot (main plot)
     
     
@@ -391,18 +433,18 @@ server <- function(input, output) {
 
     
     pal <- colorBin("magma", df_color$percent_vote, 8, pretty = FALSE)
-    #pal <- colorNumeric("Purples", domain = df_color$percent_vote) #choosing the color palette for the main plot
     pal2 <- colorFactor(palette = c("#AA0000", "#057C85", "#808080" ,"#0087cd", "#0066CC",
                                     "#ed1651", "#ADC1FD", "#004A77", "#FFD600", "#C9462C", "Snow3"), 
                         levels = c("ARTHAUD", "ASSELINEAU", "CHEMINADE", "DUPONT-AIGNAN", "FILLON", 
                                    "HAMON", "LASSALLE", "LE PEN", "MACRON", "MÉLENCHON", "POUTOU"))
-    #pal2 <- colorFactor(topo.colors(4), domain = df_color$first_cand)
-   
+    pal3 <- colorBin("viridis", domain = df_map$pop,5, pretty = T)
+    pal4 <- colorBin("viridis", domain = df_map$mean_salary_com,5, pretty = T)
     
     df4 <- df_map %>% 
-      mutate(pop1 = paste0(df_map$percent_vote,"% at ", df_map$nom),
-             #pop2 = paste0(df_merged$nom," population: ", df_merged$pop, " (x1000)"),
-             pop3= paste0(df_map$first_cand, " is the first selected candidate at ", df_map$nom))
+      mutate(pop1 = paste0(df_map$percent_vote,"% at ", df_map$COM_NAME),
+             pop2 = paste0("Population at ", df_map$COM_NAME, " : ",df_map$pop, " x(1000)"),
+             pop3= paste0(df_map$COM_NAME , " : Won by ", df_map$first_cand),
+             pop4 = paste0("Average Salary: " ,round(df_map$mean_salary_com, 1), " €/hr at ", df_map$COM_NAME))
    
   
     leaflet() %>%
@@ -437,18 +479,151 @@ server <- function(input, output) {
                     style = list("font-weight" = "normal", padding = "3px 8px"),
                     textsize = "15px",
                     direction = "auto"))  %>%
+      addPolygons(data = df_map, fillColor = ~pal3(df_map$pop), #layerId= ~nom2,
+                  fillOpacity = 0.7,
+                  group = "Population",
+                  weight = 0.2,
+                  smoothFactor = 0.2,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    fillOpacity = 0.2,
+                    bringToFront = TRUE),
+                  label=df4$pop2,
+                  labelOptions = labelOptions(
+                    style = list("font-weight" = "normal", padding = "3px 8px"),
+                    textsize = "15px",
+                    direction = "auto"))  %>%
+      addPolygons(data = df_map, fillColor = ~pal3(df_map$mean_salary_com), #layerId= ~nom2,
+                  fillOpacity = 0.7,
+                  group = "Average Salary",
+                  weight = 0.2,
+                  smoothFactor = 0.2,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    fillOpacity = 0.2,
+                    bringToFront = TRUE),
+                  label=df4$pop4,
+                  labelOptions = labelOptions(
+                    style = list("font-weight" = "normal", padding = "3px 8px"),
+                    textsize = "15px",
+                    direction = "auto"))  %>%
       addLegend(pal = pal, group = "Votes" , values = df_map$percent_vote, title = "Vote %", opacity = 0.7,
                 labFormat = labelFormat(suffix = " %")) %>%
-      addLegend(pal = pal2, group = "First Candidate" , values = df_map$first_cand, opacity = 0.7) %>%
+      addLegend(pal = pal2, group = "First Candidate" , values = df_map$first_cand, title = "Candidate Name", opacity = 0.7) %>%
+      addLegend(pal = pal3, group = "Population" , values = df_map$pop, title = "Population (x 1000)",opacity = 0.7) %>%
+      addLegend(pal = pal3, group = "Average Salary" , values = df_map$mean_salary_com, title = "€/hr",opacity = 0.7) %>%
       addLayersControl(
-        overlayGroups = c("Votes", "First Candidate"),
+        overlayGroups = c("Votes", "First Candidate","Population", "Average Salary"),
         position = "bottomleft",
         options = layersControlOptions(collapsed = T)
-      ) %>% hideGroup(c( "First Candidate"))
+      ) %>% hideGroup(c( "First Candidate", "Population", "Average Salary"))
     
     
   }) 
    #####################end communes
+  
+  df_merged <- reactive({ 
+    
+    df_map <- df3 %>% filter(LastName == input$candidate_scatter_plot) %>%  #user's input for example: "MACRON" instead of input$candidate
+      rename(nom = DEP_NAME) %>% 
+      mutate(nom = as.factor(nom))
+    
+    
+    df_merged <- list(
+      as.data.frame(deps),
+      df_map,
+      coords,
+      df_sal,
+      df_pop,
+      departments_age
+    ) %>% 
+      reduce(left_join)
+    
+    df_merged <- df_merged %>% mutate(code = str_remove(code, "^0+")) %>% 
+      left_join(., unemployement, by= "code")
+    
+    return(df_merged)
+    
+    })
+  
+  #Scatter plots
+  output$view_scatter <- renderPlotly({ # Vote vs Pop
+    
+    plot1 <- df_merged() %>% 
+      ggplot(aes(x=pop, y=percent_vote)) + geom_point() + geom_smooth(method = "lm")+
+      theme_minimal() +
+      ggtitle(paste0("Vote - Population (in deparments)") ) +
+      labs(x="Population (x 1000)", y="Vote %")
+    
+    ggplotly(plot1, tooltip = "text")
+    
+  }) 
+  
+  
+  output$view_scatter_age <- renderPlotly({ # Vote vs age
+    
+  test <- df_merged() %>% 
+    mutate(age_category = ifelse(age== "20_24" | age== "25_29"|age== "30_34", "young adults",
+                                 ifelse(age== "35_39" | age== "40_44"|age== "45_49"| age== "50_54", "middle_aged adults",
+                                        "older adults"))) %>% 
+    group_by(nom, age_category) %>% 
+    summarise(ppl_in_age_cat = sum(people),
+              percent_vote = percent_vote,
+              average_age = average_age,
+              LastName= LastName) %>% 
+    group_by(nom) %>% 
+    mutate(perc_ppl_age_cat = ppl_in_age_cat / sum(ppl_in_age_cat),
+           mean1 = average_age * perc_ppl_age_cat)
+  
+  test1 <- test %>% 
+    group_by(nom) %>% 
+    summarise(mean_age = sum(mean1), 
+              percent_vote = mean(percent_vote)
+    ) %>% 
+    dplyr::select(nom, mean_age, percent_vote) 
+  
+  p <- ggplot(data = test1, aes(x= mean_age, y= percent_vote))+geom_point()+
+    geom_smooth(method = "lm")+ theme_minimal() +
+    ggtitle(paste0("Vote - mean age (in deparments)") ) +
+    labs(x = "Average age" , y = "Vote %")
+  
+  
+  ggplotly(p, tooltip = "text")
+  
+  })
+  
+  
+  output$view_scatter_unemployment <- renderPlotly({ #Vote vs unemployment
+    
+    plot1 <- df_merged() %>% 
+      ggplot(aes(x=unemployment_rate, y=percent_vote)) + geom_point() + geom_smooth(method = "lm")+
+      theme_minimal() +
+      ggtitle(paste0("Vote - Unemployment (in departments)") ) +
+      labs(x="Unemployment Rate %", y="Vote %")
+    
+    ggplotly(plot1, tooltip = "text")
+    
+  }) 
+  
+  
+  
+  output$view_scatter_salary <- renderPlotly({ #Vote vs salary
+    
+    plot1 <- df_merged() %>% 
+      ggplot(aes(x=SNHM14, y=percent_vote)) + geom_point() + geom_smooth(method = "lm")+
+      theme_minimal() +
+      ggtitle(paste0("Vote - Mean Salary (in departments)") ) +
+      labs(x="Average Salary", y="Vote %")
+    
+    
+    ggplotly(plot1, tooltip = "text")
+    
+  }) 
+  
+  
+  
 }#end of server
 
 # Run the application
