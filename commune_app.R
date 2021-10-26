@@ -34,6 +34,7 @@ temp <- readRDS("~/Desktop/Datasets/French Election/French_election_app/temp.rds
 unemployement <- readRDS("unemployement.rds")
 departments_age <- readRDS("departments_age.rds")
 poverty <- readRDS("poverty.rds")
+life <- readRDS("life.rds")
 ########################## Data preparation ######################
 
 coords <- coords %>% 
@@ -219,7 +220,8 @@ server <- function(input, output) {
       df_pop,
       df_imm_dep,
       temp,
-      poverty
+      poverty,
+      life
     ) %>% 
       reduce(left_join)
     
@@ -242,7 +244,7 @@ server <- function(input, output) {
                         levels = c("> 15", "13.5 - 15", "13 - 13.5", "12.5 - 13", "12.25 - 12.5", 
                                    "12.125 - 12.25", "12 - 12.125", "11.75 - 12", "11.5 - 11.75", "11 - 11.5", "< 11"))
     pal6 <- colorFactor(palette = c("#FF6600", "#FF9900","#FFCC66" ), levels = c(">21" , "14.5 - 21", "14.5>"))
-    
+    pal7 <- colorBin("inferno", df_merged$avg_life, 3, pretty = T)
     
     #making popups on the map (paste0 can get both variables and words)
     df4 <- df_merged %>% 
@@ -253,7 +255,8 @@ server <- function(input, output) {
              pop5 = paste0("Unemployment Rate: ", round(df_merged$unemployment_rate, 1), "% at ", df_merged$nom),
              pop6 = paste0("Immigrants at " ,df_merged$nom, ": ", df_merged$percent_imm_dep),
              pop7= paste0("Average Temp. at ", df_merged$nom, ": ", df_merged$tmoy),
-             pop8 = paste0("Poverty Rate at ", df_merged$nom, ": ", df_merged$poverty_rate))
+             pop8 = paste0("Poverty Rate at ", df_merged$nom, ": ", df_merged$poverty_rate),
+             pop9= paste0("Avg. Life Expectancy at ", df_merged$nom, ": ", df_merged$avg_life))
     
     popup_sb <- df4$pop1
     #df_merged$nom2 <- df_merged$nom
@@ -358,6 +361,21 @@ server <- function(input, output) {
                     style = list("font-weight" = "normal", padding = "3px 8px"),
                     textsize = "15px",
                     direction = "auto")) %>%
+      addPolygons(data = df_merged, fillColor = ~pal7(df_merged$avg_life), #layerId= ~nom,
+                  fillOpacity = 0.7,
+                  group = "Avg. Life Expectancy",
+                  weight = 0.2,
+                  smoothFactor = 0.2,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    fillOpacity = 0.2,
+                    bringToFront = TRUE),
+                  label=df4$pop9,
+                  labelOptions = labelOptions(
+                    style = list("font-weight" = "normal", padding = "3px 8px"),
+                    textsize = "15px",
+                    direction = "auto")) %>%
       addLegend(pal = pal, group = "Votes" , values = df_merged$percent_vote, title = "Vote %", opacity = 0.7,
                 labFormat = labelFormat(suffix = " %")) %>%
       addLegend(pal = pal3, group = "Unemployment Rate" , values = df_merged$unemployment_rate, title = "Unemployment Rate %", opacity = 0.7,
@@ -366,11 +384,14 @@ server <- function(input, output) {
       addLegend(pal = pal4, group = "Immigrants" , values = df_merged$percent_imm_dep, title = "Immigrants (per 100K people)" ,opacity = 0.7) %>%
       addLegend(pal = pal5, group = "Average Temprature" , values = df_merged$temp_interval, title = "Average Temprature (°C)" ,opacity = 0.7) %>%
       addLegend(pal = pal6, group = "Poverty Rate" , values = df_merged$pov_interval, title = "Poverty Rate %" ,opacity = 0.7, labFormat = labelFormat(suffix = " %")) %>%
+      addLegend(pal = pal7, group = "Avg. Life Expectancy" , values = df_merged$avg_life, title = "Avg. Life Expectancy" ,opacity = 0.7) %>%
       addLayersControl(
-        overlayGroups = c( "Votes", "First Candidate", "Population","Immigrants", "Mean Wage","Unemployment Rate", "Average Temprature", "Poverty Rate"),
+        overlayGroups = c( "Votes", "First Candidate", "Population","Immigrants", "Mean Wage","Unemployment Rate", 
+                           "Average Temprature", "Poverty Rate", "Avg. Life Expectancy"),
         options = layersControlOptions(collapsed = T),
         position = "bottomleft"
-      ) %>% hideGroup(c("Population","Mean Wage", "First Candidate", "Unemployment Rate", "Immigrants", "Average Temprature", "Poverty Rate"))
+      ) %>% hideGroup(c("Population","Mean Wage", "First Candidate", "Unemployment Rate", "Immigrants",
+                        "Average Temprature", "Poverty Rate", "Avg. Life Expectancy"))
     
     
   }) 
