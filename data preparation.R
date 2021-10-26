@@ -4,6 +4,7 @@ library(sf)
 library(rgdal)
 library(spdplyr)
 library(tigris)
+library(lubridate)
 rm(list=ls())
 
 
@@ -115,7 +116,7 @@ name_geographic_information <- read_csv("name_geographic_information.csv")
 coords <- name_geographic_information %>% 
   dplyr::select(numéro_département, nom_département, latitude, longitude) %>% 
   rename(code = numéro_département, DEP_NAME = nom_département)
-#coords <- saveRDS(coords, file= "coords.rds")
+coords <- saveRDS(coords, file= "coords.rds")
 coords <- readRDS("coords.rds")
 
 
@@ -129,8 +130,7 @@ df_dep_sal <- readRDS("df_dep_sal.rds")
 
 
 #preparing population per department dataset
-correspondance_code_insee_code_postal <- read_csv("correspondance-code-insee-code-postal.csv")
-df_dep_pop <- correspondance_code_insee_code_postal %>% 
+correspondance_code_insee_code_postal <- read_csv("~/Desktop/Datasets/French Election/Data/correspondance-code-insee-code-postal.csv")df_dep_pop <- correspondance_code_insee_code_postal %>% 
   dplyr::select(Département, Population) %>% 
   rename(nom = Département, pop = Population) %>% 
   mutate(nom = str_to_title(nom)) %>% #for making capital letters to small letters
@@ -259,57 +259,73 @@ departments_age <- left_join(departments_age, new_age)
 #saveRDS(departments_age, "departments_age.rds") 
 
 
+#preparing departments shapes dataset 
+deps <- rgdal::readOGR("departements.geojson")
+
+#saveRDS(deps, "departments.rds")
 
 
+#preparing immigration dataset for departments
+BTX_TD_IMG1A_2017 <- read_excel("~/Desktop/Datasets/French Election/Data/BTX_TD_IMG1A_2017.xlsx")
+df_imm_dep <- BTX_TD_IMG1A_2017 %>% rowwise() %>% 
+  mutate(female_immigrants = round(sum(across(ends_with("IMMI1_SEXE2")), na.rm = T), 0),
+         male_immigrants = round(sum(across(starts_with("IMMI1_SEXE1")))),
+         total_imm = female_immigrants + male_immigrants,
+         code = str_sub(CODGEO, 1, 2)
+  ) %>%
+  dplyr::select(code, total_imm )
 
+df_imm_dep <- df_imm_dep %>% 
+  group_by(code) %>% summarise(total_imm = sum(total_imm)) %>% 
+  mutate(total_immigrants_france = sum(total_imm))
 
+departments <- readRDS("~/Desktop/Datasets/French Election/French_election_app/departments.rds")
+df_imm_dep <- left_join(df_imm_dep, as.data.frame(departments))
 
+correspondance_code_insee_code_postal <- read_csv("~/Desktop/Datasets/French Election/Data/correspondance-code-insee-code-postal.csv")
+chiz <- correspondance_code_insee_code_postal %>% 
+  dplyr::select(`Code INSEE`, `Département`, Population) %>% 
+  rename(code = `Code INSEE`) %>% 
+  mutate(code = str_sub(code, 1,2)) #only selecting the first two numbers of the code variable 
 
+df_imm_dep <- left_join(df_imm_dep, chiz)
+df_imm_dep <- df_imm_dep %>% group_by(code) %>% summarise(Population = sum(Population),
+                                                          total_imm = mean(total_imm)) %>% 
+  mutate(percent_imm_dep = round(total_imm*100 /Population))  
 
+#saveRDS(df_imm_dep, "df_imm_dep.rds")
 
+#preparing temperature dataset for departments
+temperature_quotidienne_departementale <- read_delim("~/Desktop/Datasets/French Election/Data/temperature-quotidienne-departementale.csv", 
+                                                     delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
+temp <- temperature_quotidienne_departementale %>% filter(year(date_obs) == 2018 ) %>% #choosing only 2018 data
+  group_by(departement) %>% summarise(tmoy = mean(tmoy),
+                                      code_insee_departement = min(code_insee_departement)) %>% 
+  rename(code = code_insee_departement)
 
+temp <- temp %>% mutate(temp_interval = ifelse(tmoy > 15 , "> 15", 
+                                            ifelse(tmoy > 13.5 & tmoy <= 15, "13.5 - 15", 
+                                                ifelse(tmoy > 13 & tmoy <= 13.5, "13 - 13.5",
+                                                       ifelse(tmoy > 12.5 & tmoy <= 13, "12.5 - 13",
+                                                              ifelse(tmoy > 12.25 & tmoy <= 12.5, "12.25 - 12.5",
+                                                                     ifelse(tmoy > 12.125 & tmoy <=12.25, "12.125 - 12.25",
+                                                                            ifelse(tmoy > 12 & tmoy <= 12.125, "12 - 12.125",
+                                                                                   ifelse(tmoy > 11.75 & tmoy<= 12, "11.75 - 12",
+                                                                                          ifelse(tmoy > 11.5 & tmoy <=11.75, "11.5 - 11.75", 
+                                                                                                 ifelse(tmoy >11 & tmoy <= 11.5, "11 - 11.5", "< 11"
+                                                                                                       ))))))))))
+                         
+)
 
+#saveRDS(temp, "temp.rds")
 
+#preparing poverty dataset for departments
+povert_rte_departments_2017 <- read_excel("~/Desktop/Datasets/French Election/Data/povert rte departments 2017.xlsx")
+poverty <- povert_rte_departments_2017 %>% 
+  dplyr::select( CODGEO, LIBGEO, TP6017) %>% 
+  rename(code = CODGEO, poverty_rate= TP6017)
 
-
-
-
-
-
-#saveRDS(departments_unempolyment_rate, "departments_unempolyment_rate.rds")
-
-# calculating the labor force in each department
-
-# de_employ <- df_comdep_pop %>% 
-#   rowwise() %>% 
-#   mutate(total_unemployed = round(sum(across(starts_with("TACTR12")), na.rm = T), 0),
-#          female_unemployed = round(
-#            sum(
-#              across(
-#                intersect(
-#                  starts_with("TACTR12"), ends_with("SEXE2")
-#                ), 
-#                na.rm = T), 
-#              0)
-#          ),
-#          male_unemployed = round(total_unemployed - female_unemployed),
-#          tactr11 = round(sum(across(starts_with("TACTR11")))),
-#          tactr21 = round(sum(across(starts_with("TACTR21")))),
-#          tactr22 = round(sum(across(starts_with("TACTR22")))),
-#          tactr24 = round(sum(across(starts_with("TACTR24")))),
-#          tactr26 = round(sum(across(starts_with("TACTR26")))),
-#          otherthanunemployed= sum(tactr11, tactr21, tactr22, tactr24, tactr26),
-#          unemployment_rate = (total_unemployed / otherthanunemployed)) %>%
-#   dplyr::select(CODGEO, LIBGEO, nom, total_unemployed, female_unemployed, male_unemployed, otherthanunemployed,unemployment_rate )
-# 
-# df_employ <- de_employ %>% mutate(nom = as.factor(nom)) %>% group_by(nom) %>% 
-#   summarise(total_unemployed = sum(total_unemployed, na.rm = T),
-#             female_unemployed = sum(female_unemployed, na.rm = T),
-#             male_unemployed = sum(male_unemployed, na.rm = T),
-#             otherthanunemployed = sum(otherthanunemployed, na.rm = T),
-#             unemployment_rate = sum(unemployment_rate, na.rm = T)
-#             )
-#saveRDS(df_employ, "df_employ.rds")     
-
-
+poverty <- poverty %>% mutate(pov_interval = ifelse(poverty_rate > 21 , ">21",
+                                                 ifelse(poverty_rate <= 21 & poverty_rate > 15, "14.5 - 21", "14.5>")))
+#saveRDS(poverty, "poverty.rds")
