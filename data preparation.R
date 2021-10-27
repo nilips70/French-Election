@@ -304,7 +304,7 @@ temp <- temperature_quotidienne_departementale %>% filter(year(date_obs) == 2018
                                       code_insee_departement = min(code_insee_departement)) %>% 
   rename(code = code_insee_departement)
 
-temp <- temp %>% mutate(temp_interval = ifelse(tmoy > 15 , "> 15", 
+temp <- temp %>% mutate(temp_interval = ifelse(tmoy > 15 , "15 or above", 
                                             ifelse(tmoy > 13.5 & tmoy <= 15, "13.5 - 15", 
                                                 ifelse(tmoy > 13 & tmoy <= 13.5, "13 - 13.5",
                                                        ifelse(tmoy > 12.5 & tmoy <= 13, "12.5 - 13",
@@ -313,7 +313,7 @@ temp <- temp %>% mutate(temp_interval = ifelse(tmoy > 15 , "> 15",
                                                                             ifelse(tmoy > 12 & tmoy <= 12.125, "12 - 12.125",
                                                                                    ifelse(tmoy > 11.75 & tmoy<= 12, "11.75 - 12",
                                                                                           ifelse(tmoy > 11.5 & tmoy <=11.75, "11.5 - 11.75", 
-                                                                                                 ifelse(tmoy >11 & tmoy <= 11.5, "11 - 11.5", "< 11"
+                                                                                                 ifelse(tmoy >11 & tmoy <= 11.5, "11- 11.5", "11 or below"
                                                                                                        ))))))))))
                          
 )
@@ -329,3 +329,20 @@ poverty <- povert_rte_departments_2017 %>%
 poverty <- poverty %>% mutate(pov_interval = ifelse(poverty_rate > 21 , ">21",
                                                  ifelse(poverty_rate <= 21 & poverty_rate > 15, "14.5 - 21", "14.5>")))
 #saveRDS(poverty, "poverty.rds")
+
+#preparing life expectancy dataset
+life_expectancy <- read_excel("~/Desktop/Datasets/French Election/Data/life expectancy.xlsx") %>% 
+  rename(code = Code,  avg_life= 'average life expectancy') %>% 
+  dplyr::select(code , avg_life)
+
+#saveRDS(life_expectancy, "life.rds")
+
+
+#preparing education dataset for departments
+education <- read_excel("~/Desktop/Datasets/French Election/Data/education.xlsx")
+
+education <- education %>% mutate(people_education = as.numeric(people_education))
+education <- education %>% mutate(edu_int = ifelse(people_education >= 18.8, ">=18.8",
+                                             ifelse(people_education > 17.2 & people_education < 18.8, "17.2 - 18.8", "17.2=<")))
+
+#saveRDS(education, "education.rds")
