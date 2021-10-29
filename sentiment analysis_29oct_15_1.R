@@ -7,16 +7,17 @@ library(textclean)
 rm(list=ls())
 
 ##reading the data
-database_15_0 <- read_excel("database_15_0.xlsx")
+database_15_1 <- read_csv("3.csv")
+
 
 #sampling
-samp <- sample(1:nrow(database_15_0), 500)
-samp_database_15_0 <-  database_15_0[samp, ]
+samp <- sample(1:nrow(database_15_1), 500)
+samp_database_15_1 <-  database_15_1[samp, ]
 
-#write_xlsx(samp_database_15_0,"samp_database_15_0.xlsx")
+#write_xlsx(samp_database_15_1,"samp_database_15_1.xlsx")
 #tarjome ro dasti kardam
 #reading the samp_database_14_3.xlsx
-newdata <- read_excel("samp_database_15_0.xlsx")
+newdata <- read_excel("samp_database_15_1.xlsx")
 
 #data cleaning
 new <- newdata %>% 
@@ -24,11 +25,11 @@ new <- newdata %>%
                 mention_Dupont_Aignan, mention_Fillon, mention_Hamon, mention_Lassalle, `mention_Le Pen` , mention_Macron, 
                 mention_Melenchon , mention_Poutou, translation)
 
-df_Arthaud <- new %>% filter(mention_Arthaud == 1)     #there was no tweets mentioning Arthaud in our sample
+df_Arthaud <- new %>% filter(mention_Arthaud == 1)     
 
 df_Asselineau <- new %>% filter(mention_Asselineau == 1)
 
-df_Cheminade <- new %>% filter(mention_Cheminade == 1)   #there was no tweets mentioning Arthaud in our sample
+df_Cheminade <- new %>% filter(mention_Cheminade == 1)   
 
 df_Dupont_Aignan <- new %>% filter(mention_Dupont_Aignan == 1)
 
@@ -413,3 +414,43 @@ barplot(colSums(emotions_Poutou),cex.names = .7,
 
 ###############################  END  --  Poutou   ####################################
 
+###############################   Cheminade    ####################################
+#data cleaning for df_Cheminade
+twitterCorpus_Cheminade <-Corpus(VectorSource(df_Cheminade$translation))
+inspect(twitterCorpus_Cheminade[1:501])
+twitterCorpus_Cheminade<- tm_map(twitterCorpus_Cheminade, content_transformer(tolower))
+twitterCorpus_Cheminade<- tm_map(twitterCorpus_Cheminade,removeWords,stopwords("en"))
+twitterCorpus_Cheminade<- tm_map( twitterCorpus_Cheminade,removeNumbers)
+twitterCorpus_Cheminade<- tm_map( twitterCorpus_Cheminade,removePunctuation)
+
+removeURL<- function(x) gsub("http[[:alnum:]]*", "", x)   
+twitterCorpus_Cheminade<- tm_map(twitterCorpus_Cheminade,content_transformer(removeURL))
+
+removeURL<- function(x) gsub("edua[[:alnum:]]*", "", x)   
+twitterCorpus_Cheminade<- tm_map(twitterCorpus_Cheminade,content_transformer(removeURL))
+
+# remove non "American standard code for information interchange (curly quotes and ellipsis)"
+#  using function from package "textclean"            
+
+removeNonAscii<-function(x) textclean::replace_non_ascii(x) 
+twitterCorpus_Cheminade<-tm_map(twitterCorpus_Cheminade,content_transformer(removeNonAscii))
+
+twitterCorpus_Cheminade<- tm_map(twitterCorpus_Cheminade,removeWords,c("amp","ufef",
+                                                                 "ufeft","uufefuufefuufef","uufef","s"))  
+
+twitterCorpus_Cheminade<- tm_map(twitterCorpus_Cheminade,stripWhitespace)
+
+inspect(twitterCorpus_macron[1:501])
+
+
+
+#Sentiment analysis
+# find count of 8 emotional sentiments
+emotions_Cheminade<-get_nrc_sentiment(twitterCorpus_Cheminade$content)
+barplot(colSums(emotions_Cheminade),cex.names = .7,
+        col = rainbow(10),
+        main = "Sentiment scores for tweets"
+)
+
+
+###############################  END  --  Cheminade    ####################################
