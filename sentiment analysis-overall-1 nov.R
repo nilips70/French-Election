@@ -17,22 +17,254 @@ library(spdplyr)
 library(tigris)
 library(likert)
 library(grid)
-library(corrplot)
+
 
 rm(list=ls())
 
-#reading emotions scores datasets
-emotions_Arthaud_16_0 <- read_excel("emotions/emotions_Arthaud_16_0.xlsx")
-emotions_Asselineau_14_3 <- read_excel("emotions/emotions_Asselineau_14_3.xlsx")
-emotions_Cheminade_14_3 <- read_excel("emotions/emotions_Cheminade_14_3.xlsx")
-emotions_Dupont_14_3 <- read_excel("emotions/emotions_Dupont_14_3.xlsx")
-emotions_Fillon_14_3 <- read_excel("emotions/emotions_Fillon_14_3.xlsx")
-emotions_Hamon_14_3 <- read_excel("emotions/emotions_Hamon_14_3.xlsx")
-emotions_Lassalle_14_3 <- read_excel("emotions/emotions_Lassalle_14_3.xlsx")
-emotions_lepen_14_3 <- read_excel("emotions/emotions_lepen_14_3.xlsx")
-emotions_macron_14_3 <- read_excel("emotions/emotions_macron_14_3.xlsx")
-emotions_Melenchon_14_3 <- read_excel("emotions/emotions_Melenchon_14_3.xlsx")
-emotions_Poutou_14_3 <- read_excel("emotions/emotions_Poutou_14_3.xlsx")
+emotions_Arthaud_16_0 <- read_excel("emotions_Arthaud_16_0.xlsx")
+emotions_Arthaud_18_0 <- read_excel("emotions_Arthaud_18_0.xlsx")
+
+emotions_Arthaud_16_0 <- rbind(emotions_Arthaud_16_0, emotions_Arthaud_18_0)
+
+emotions_Asselineau_14_3 <- read_excel("emotions_Asselineau_14_3.xlsx")
+emotions_Asselineau_15_0 <- read_excel("emotions_Asselineau_15_0.xlsx")
+emotions_Asselineau_15_1 <- read_excel("emotions_Asselineau_15_1.xlsx")
+emotions_Asselineau_15_2 <- read_excel("emotions_Asselineau_15_2.xlsx")
+emotions_Asselineau_16_0 <- read_excel("emotions_Asselineau_16_0.xlsx")
+emotions_Asselineau_16_2 <- read_excel("emotions_Asselineau_16_2.xlsx")
+emotions_Asselineau_16_3 <- read_excel("emotions_Asselineau_16_3.xlsx")
+emotions_Asselineau_17_1 <- read_excel("emotions_Asselineau_17_1.xlsx")
+emotions_Asselineau_17_2 <- read_excel("emotions_Asselineau_17_2.xlsx")
+emotions_Asselineau_17_3 <- read_excel("emotions_Asselineau_17_3.xlsx")
+emotions_Asselineau_18_0 <- read_excel("emotions_Asselineau_18_0.xlsx")
+emotions_Asselineau_19_0 <- read_excel("emotions_Asselineau_19_0.xlsx")
+
+emotions_Asselineau_14_3 <- rbind(emotions_Asselineau_14_3, emotions_Asselineau_15_0, emotions_Asselineau_15_1,
+                                  emotions_Asselineau_15_2,
+                                  emotions_Asselineau_16_0,
+                                  emotions_Asselineau_16_2,
+                                  emotions_Asselineau_16_3,
+                                  emotions_Asselineau_17_1,
+                                  emotions_Asselineau_17_2,
+                                  emotions_Asselineau_17_3,
+                                  emotions_Asselineau_18_0,
+                                  emotions_Asselineau_19_0)
+
+
+
+emotions_Cheminade_14_3 <- read_excel("emotions_Cheminade_14_3.xlsx")
+emotions_Cheminade_15_1 <- read_excel("emotions_Cheminade_15_1.xlsx")
+emotions_Cheminade_15_2 <- read_excel("emotions_Cheminade_15_2.xlsx")
+emotions_Cheminade_18_1 <- read_excel("emotions_Cheminade_18_1.xlsx")
+
+emotions_Cheminade_14_3<- rbind(emotions_Cheminade_14_3,
+                                emotions_Cheminade_15_1,
+                                emotions_Cheminade_15_2,
+                                emotions_Cheminade_18_1)
+
+
+emotions_Dupont_14_3 <- read_excel("emotions_Dupont_14_3.xlsx")
+emotions_Dupont_15_0 <- read_excel("emotions_Dupont_15_0.xlsx")
+emotions_Dupont_15_1 <- read_excel("emotions_Dupont_15_1.xlsx")
+emotions_Dupont_15_2 <- read_excel("emotions_Dupont_15_2.xlsx")
+emotions_Dupont_16_0 <- read_excel("emotions_Dupont_16_0.xlsx")
+emotions_Dupont_16_2 <- read_excel("emotions_Dupont_16_2.xlsx")
+emotions_Dupont_16_3 <- read_excel("emotions_Dupont_16_3.xlsx")
+emotions_Dupont_17_0 <- read_excel("emotions_Dupont_17_0.xlsx")
+emotions_Dupont_17_0 <- read_excel("emotions_Dupont_17_0.xlsx")
+emotions_Dupont_17_1 <- read_excel("emotions_Dupont_17_1.xlsx")
+emotions_Dupont_17_2 <- read_excel("emotions_Dupont_17_2.xlsx")
+emotions_Dupont_17_3 <- read_excel("emotions_Dupont_17_3.xlsx")
+emotions_Dupont_18_0 <- read_excel("emotions_Dupont_18_0.xlsx")
+emotions_Dupont_18_1 <- read_excel("emotions_Dupont_18_1.xlsx")
+emotions_Dupont_18_2 <- read_excel("emotions_Dupont_18_2.xlsx")
+emotions_Dupont_18_3 <- read_excel("emotions_Dupont_18_3.xlsx")
+emotions_Dupont_19_0 <- read_excel("emotions_Dupont_19_0.xlsx")
+
+emotions_Dupont_14_3<- rbind(emotions_Dupont_14_3,
+                             emotions_Dupont_15_0,
+                             emotions_Dupont_15_1,
+                             emotions_Dupont_15_2,
+                             emotions_Dupont_16_0,
+                             emotions_Dupont_16_2,
+                             emotions_Dupont_16_3,
+                             emotions_Dupont_17_0,
+                             emotions_Dupont_17_0,
+                             emotions_Dupont_17_1,
+                             emotions_Dupont_17_2,
+                             emotions_Dupont_17_3,
+                             emotions_Dupont_18_0,
+                             emotions_Dupont_18_1,
+                             emotions_Dupont_18_2,
+                             emotions_Dupont_18_3,
+                             emotions_Dupont_19_0)
+
+
+emotions_Fillon_14_3 <- read_excel("emotions_Fillon_14_3.xlsx")
+emotions_Fillon_15_0 <- read_excel("emotions_Fillon_15_0.xlsx")
+emotions_Fillon_15_1 <- read_excel("emotions_Fillon_15_1.xlsx")
+emotions_Fillon_15_2 <- read_excel("emotions_Fillon_15_2.xlsx")
+emotions_Fillon_16_0 <- read_excel("emotions_Fillon_16_0.xlsx")
+emotions_Fillon_16_2 <- read_excel("emotions_Fillon_16_2.xlsx")
+emotions_Fillon_16_3 <- read_excel("emotions_Fillon_16_3.xlsx")
+emotions_Fillon_17_0 <- read_excel("emotions_Fillon_17_0.xlsx")
+emotions_Fillon_17_1 <- read_excel("emotions_Fillon_17_1.xlsx")
+emotions_Fillon_17_2 <- read_excel("emotions_Fillon_17_2.xlsx")
+emotions_Fillon_17_3 <- read_excel("emotions_Fillon_17_3.xlsx")
+emotions_Fillon_18_0 <- read_excel("emotions_Fillon_18_0.xlsx")
+emotions_Fillon_18_1 <- read_excel("emotions_Fillon_18_1.xlsx")
+emotions_Fillon_18_2 <- read_excel("emotions_Fillon_18_2.xlsx")
+emotions_Fillon_18_3 <- read_excel("emotions_Fillon_18_3.xlsx")
+emotions_Fillon_19_0 <- read_excel("emotions_Fillon_19_0.xlsx")
+emotions_Fillon_19_1 <- read_excel("emotions_Fillon_19_1.xlsx")
+
+emotions_Fillon_14_3<- rbind(emotions_Fillon_14_3,
+                             emotions_Fillon_15_0,
+                             emotions_Fillon_15_1,
+                             emotions_Fillon_15_2,
+                             emotions_Fillon_16_0,
+                             emotions_Fillon_16_2,
+                             emotions_Fillon_16_3,
+                             emotions_Fillon_17_0,
+                             emotions_Fillon_17_1,
+                             emotions_Fillon_17_2,
+                             emotions_Fillon_17_3,
+                             emotions_Fillon_18_0,
+                             emotions_Fillon_18_1,
+                             emotions_Fillon_18_2,
+                             emotions_Fillon_18_3,
+                             emotions_Fillon_19_0,
+                             emotions_Fillon_19_1)
+
+
+emotions_Hamon_14_3 <- read_excel("emotions_Hamon_14_3.xlsx")
+emotions_Hamon_15_0 <- read_excel("emotions_Hamon_15_0.xlsx")
+emotions_Hamon_15_1 <- read_excel("emotions_Hamon_15_1.xlsx")
+emotions_Hamon_15_2 <- read_excel("emotions_Hamon_15_2.xlsx")
+emotions_Hamon_16_0 <- read_excel("emotions_Hamon_16_0.xlsx")
+emotions_Hamon_16_2 <- read_excel("emotions_Hamon_16_2.xlsx")
+emotions_Hamon_16_3 <- read_excel("emotions_Hamon_16_3.xlsx")
+emotions_Hamon_17_0 <- read_excel("emotions_Hamon_17_0.xlsx")
+emotions_Hamon_17_1 <- read_excel("emotions_Hamon_17_1.xlsx")
+emotions_Hamon_17_2 <- read_excel("emotions_Hamon_17_2.xlsx")
+emotions_Hamon_17_3 <- read_excel("emotions_Hamon_17_3.xlsx")
+emotions_Hamon_18_0 <- read_excel("emotions_Hamon_18_0.xlsx")
+emotions_Hamon_18_1 <- read_excel("emotions_Hamon_18_1.xlsx")
+emotions_Hamon_18_2 <- read_excel("emotions_Hamon_18_2.xlsx")
+emotions_Hamon_18_3 <- read_excel("emotions_Hamon_18_3.xlsx")
+emotions_Hamon_19_0 <- read_excel("emotions_Hamon_19_0.xlsx")
+emotions_Hamon_19_1 <- read_excel("emotions_Hamon_19_1.xlsx")
+
+emotions_Hamon_14_3<- rbind(emotions_Hamon_14_3,
+                            emotions_Hamon_15_0,
+                            emotions_Hamon_15_1,
+                            emotions_Hamon_15_2,
+                            emotions_Hamon_16_0,
+                            emotions_Hamon_16_2,
+                            emotions_Hamon_16_3,
+                            emotions_Hamon_17_0,
+                            emotions_Hamon_17_1,
+                            emotions_Hamon_17_2,
+                            emotions_Hamon_17_3,
+                            emotions_Hamon_18_0,
+                            emotions_Hamon_18_1,
+                            emotions_Hamon_18_2,
+                            emotions_Hamon_18_3,
+                            emotions_Hamon_19_0,
+                            emotions_Hamon_19_1)
+
+
+emotions_Lassalle_14_3 <- read_excel("emotions_Lassalle_14_3.xlsx")
+emotions_Lassalle_15_0 <- read_excel("emotions_Lassalle_15_0.xlsx")
+emotions_Lassalle_15_1 <- read_excel("emotions_Lassalle_15_1.xlsx")
+emotions_Lassalle_15_2 <- read_excel("emotions_Lassalle_15_2.xlsx")
+emotions_Lassalle_16_0 <- read_excel("emotions_Lassalle_16_0.xlsx")
+emotions_Lassalle_17_1 <- read_excel("emotions_Lassalle_17_1.xlsx")
+emotions_Lassalle_17_2 <- read_excel("emotions_Lassalle_17_2.xlsx")
+emotions_Lassalle_17_3 <- read_excel("emotions_Lassalle_17_3.xlsx")
+
+emotions_Lassalle_14_3 <- rbind(emotions_Lassalle_14_3,
+                                emotions_Lassalle_15_0,
+                                emotions_Lassalle_15_1,
+                                emotions_Lassalle_15_2,
+                                emotions_Lassalle_16_0,
+                                emotions_Lassalle_17_1,
+                                emotions_Lassalle_17_2,
+                                emotions_Lassalle_17_3)
+  
+emotions_lepen_14_3 <- read_excel("emotions_lepen_14_3.xlsx")
+emotions_lepen_15_0 <- read_excel("emotions_lepen_15_0.xlsx")
+emotions_lepen_15_1 <- read_excel("emotions_lepen_15_1.xlsx")
+emotions_lepen_16_0 <- read_excel("emotions_lepen_16_0.xlsx")
+emotions_lepen_16_2 <- read_excel("emotions_lepen_16_2.xlsx")
+emotions_lepen_16_3 <- read_excel("emotions_lepen_16_3.xlsx")
+emotions_lepen_17_0 <- read_excel("emotions_lepen_17_0.xlsx")
+emotions_lepen_17_1 <- read_excel("emotions_lepen_17_1.xlsx")
+emotions_lepen_17_2 <- read_excel("emotions_lepen_17_2.xlsx")
+emotions_lepen_17_3 <- read_excel("emotions_lepen_17_3.xlsx")
+emotions_lepen_18_0 <- read_excel("emotions_lepen_18_0.xlsx")
+emotions_lepen_18_1 <- read_excel("emotions_lepen_18_1.xlsx")
+emotions_lepen_18_2 <- read_excel("emotions_lepen_18_2.xlsx")
+emotions_lepen_18_3 <- read_excel("emotions_lepen_18_3.xlsx")
+emotions_lepen_19_0 <- read_excel("emotions_lepen_19_0.xlsx")
+emotions_lepen_19_1 <- read_excel("emotions_lepen_19_1.xlsx")
+
+emotions_lepen_14_3 <- rbind(emotions_lepen_14_3,
+                             emotions_lepen_15_0,
+                             emotions_lepen_15_1,
+                             emotions_lepen_16_0,
+                             emotions_lepen_16_2,
+                             emotions_lepen_16_3,
+                             emotions_lepen_17_0,
+                             emotions_lepen_17_1,
+                             emotions_lepen_17_2,
+                             emotions_lepen_17_3,
+                             emotions_lepen_18_0,
+                             emotions_lepen_18_1,
+                             emotions_lepen_18_2,
+                             emotions_lepen_18_3,
+                             emotions_lepen_19_0,
+                             emotions_lepen_19_1)
+
+emotions_macron_14_3 <- read_excel("emotions_macron_14_3.xlsx")
+emotions_macron_15_0 <- read_excel("emotions_macron_15_0.xlsx")
+emotions_macron_15_1 <- read_excel("emotions_macron_15_1.xlsx")
+emotions_macron_15_2 <- read_excel("emotions_macron_15_2.xlsx")
+emotions_macron_16_0 <- read_excel("emotions_macron_16_0.xlsx")
+emotions_macron_16_2 <- read_excel("emotions_macron_16_2.xlsx")
+emotions_macron_16_3 <- read_excel("emotions_macron_16_3.xlsx")
+emotions_macron_16_3 <- read_excel("emotions_macron_16_3.xlsx")
+emotions_macron_17_0 <- read_excel("emotions_macron_17_0.xlsx")
+emotions_macron_17_1 <- read_excel("emotions_macron_17_1.xlsx")
+emotions_macron_17_3 <- read_excel("emotions_macron_17_3.xlsx")
+emotions_macron_18_0 <- read_excel("emotions_macron_18_0.xlsx")
+emotions_macron_18_1 <- read_excel("emotions_macron_18_1.xlsx")
+emotions_macron_18_2 <- read_excel("emotions_macron_18_2.xlsx")
+emotions_macron_18_3 <- read_excel("emotions_macron_18_3.xlsx")
+emotions_macron_19_0 <- read_excel("emotions_macron_19_0.xlsx")
+emotions_macron_19_1 <- read_excel("emotions_macron_19_1.xlsx")
+
+emotions_macron_14_3 <- rbind(
+  emotions_macron_14_3,
+  emotions_macron_15_0,
+  emotions_macron_15_1,
+  emotions_macron_15_2,
+  emotions_macron_16_0,
+  emotions_macron_16_2,
+  emotions_macron_16_3,
+  emotions_macron_16_3,
+  emotions_macron_17_0,
+  emotions_macron_17_1,
+  emotions_macron_17_3,
+  emotions_macron_18_0,
+  emotions_macron_18_1,
+  emotions_macron_18_2,
+  emotions_macron_18_3,
+  emotions_macron_19_0,
+  emotions_macron_19_1)
+
+emotions_Melenchon_14_3 <- read_excel("emotions_Melenchon_14_3.xlsx")
+emotions_Poutou_14_3 <- read_excel("emotions_Poutou_14_3.xlsx")
 
 ########################### VISUALIZATION - emotional analysis for 11 candidates #############################
 
@@ -262,7 +494,8 @@ test <- rbind(arthaud,
               Poutou)
 
 #correlation of the emotions
-corrplot(cor(test[,1:10]), order = 'AOE', type = 'lower')
+#corrplot(cor(test[,1:10]), order = 'hclust', type = 'lower', addrect = 2)
+corrplot(cor(test[,1:10]), order = 'hclust', addrect = 2)
 
 #aggregating the emotions and puting them into only two categories: positive and negative
 test1 <- test %>% mutate(manfi = anger + sadness + negative + fear + disgust) %>% 
