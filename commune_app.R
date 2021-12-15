@@ -38,6 +38,13 @@ life <- readRDS("life.rds")
 education <- readRDS("~/Desktop/Datasets/French Election/French_election_app/education.rds")
 ########################## Data preparation ######################
 
+#removing departments outside of metropolitan france
+results <- results %>% filter(DEP_NAME != "Saint-Martin/Saint-Barthélemy" & DEP_NAME != "Wallis et Futuna" &
+                                DEP_NAME != "Polynésie française" & DEP_NAME != "Nouvelle-Calédonie" &
+                                DEP_NAME != "Français établis hors de France" & DEP_NAME != "Saint-Pierre-et-Miquelon" &
+                                DEP_NAME != "Mayotte" & DEP_NAME!= "La Réunion" & DEP_NAME != "Guyane" & DEP_NAME != "Martinique" & DEP_NAME!= "Guadeloupe")
+
+
 coords <- coords %>% 
   mutate(code = as.factor(code),
          DEP_NAME = as.factor(DEP_NAME)) %>% 
@@ -494,6 +501,8 @@ server <- function(input, output) {
     # pal4 <- colorBin("viridis", domain = df_map$mean_salary_com,5, pretty = T)
     pal5 <- colorBin("magma", domain = df_map$imm_percent,8, pretty = T)
     pal6 <- colorBin("magma", domain = df_map$unemp_rate,8, pretty = T)
+    #pal7 <- colorBin("magma", domain = df_map$foriegner,3, pretty = T)
+    
     
     df4 <- df_map %>% 
       mutate(pop1 = paste0(df_map$percent_vote,"% at ", df_map$COM_NAME),
@@ -502,6 +511,7 @@ server <- function(input, output) {
              pop5= paste0("Immigrants at " ,df_map$COM_NAME, ": ", df_map$imm_percent),
              #pop4 = paste0("Average Salary: " ,round(df_map$mean_salary_com, 1), " €/hr at ", df_map$COM_NAME),
              pop6= paste0("Unemployment Rate: ", round(df_map$unemp_rate, 1), "% at ", df_map$COM_NAME))
+             #pop7 = paste0("Number of first-generation immigrants: ", df_map$foriegner, " at ", df_map$COM_NAME))
     
     
     leaflet() %>%
@@ -551,21 +561,7 @@ server <- function(input, output) {
                     style = list("font-weight" = "normal", padding = "3px 8px"),
                     textsize = "15px",
                     direction = "auto"))  %>%
-      # addPolygons(data = df_map, fillColor = ~pal3(df_map$mean_salary_com), #layerId= ~nom2,
-      #             fillOpacity = 0.7,
-      #             group = "Average Salary",
-      #             weight = 0.2,
-      #             smoothFactor = 0.2,
-      #             highlight = highlightOptions(
-      #               weight = 5,
-      #               color = "#666",
-      #               fillOpacity = 0.2,
-      #               bringToFront = TRUE),
-      #             label=df4$pop4,
-    #             labelOptions = labelOptions(
-    #               style = list("font-weight" = "normal", padding = "3px 8px"),
-    #               textsize = "15px",
-    #               direction = "auto"))  %>%
+    
     addPolygons(data = df_map, fillColor = ~pal5(imm_percent), #layerId= ~percent_vote,
                 fillOpacity = 0.7,
                 group = "Immigrants",
@@ -603,13 +599,14 @@ server <- function(input, output) {
       # addLegend(pal = pal3, group = "Average Salary" , values = df_map$mean_salary_com, title = "€/hr",opacity = 0.7) %>%
       addLegend(pal = pal5, group = "Immigrants" , values = df_map$imm_percent, title = "Immigrants (per 100K people)",opacity = 0.7) %>%
       addLegend(pal = pal6, group = "Unemployment Rate" , values = df_map$unemp_rate, title = "Unemployment Rate %",opacity = 0.7, labFormat = labelFormat(suffix = " %")) %>%
+      
       addLayersControl(
         overlayGroups = c("Votes", "First Candidate",
-                          "Population", "Immigrants","Unemployment Rate" ), # "Average Salary"),
+                          "Population", "Immigrants", "Unemployment Rate" ), 
         position = "bottomleft",
         options = layersControlOptions(collapsed = T)
       ) %>% hideGroup(c( "First Candidate"
-                         , "Population", "Immigrants", "Unemployment Rate")) #, "Average Salary"))
+                         , "Population", "Immigrants" ,"Unemployment Rate")) 
     
     
   }) 
