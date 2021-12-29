@@ -23,19 +23,20 @@ df_test <- readRDS("merged_votes_map.rds")
 com_vote <- readRDS("com_vote.rds")
 
 #departments datasets
-df_imm_dep <- readRDS("~/Desktop/Datasets/French Election/French_election_app/df_imm_dep.rds")
+df_imm_dep <- readRDS("df_imm_dep.rds")
 dep_vote <- readRDS("dep_vote.rds")
 results <- readRDS("results.rds")
 coords <- readRDS("geographic_information.rds")
 df_sal <- readRDS("df_dep_sal.rds")
 df_pop <- readRDS("df_dep_pop.rds")
 deps <- readRDS("departments.rds")
-temp <- readRDS("~/Desktop/Datasets/French Election/French_election_app/temp.rds")
+temp <- readRDS("temp.rds")
 unemployement <- readRDS("unemployement.rds")
 departments_age <- readRDS("departments_age.rds")
 poverty <- readRDS("poverty.rds")
 life <- readRDS("life.rds")
-education <- readRDS("~/Desktop/Datasets/French Election/French_election_app/education.rds")
+education <- readRDS("education.rds")
+d2_k <- readRDS("d2_k.rds")
 ########################## Data preparation ######################
 
 #removing departments outside of metropolitan france
@@ -176,32 +177,38 @@ ui <- fluidPage(
                         ),
                         mainPanel(
                           column(width = 6,
-                                 plotlyOutput("view_scatter") %>% withSpinner(color = "#1E90FF"),
-                                 hr()
-                          ),
-                          column(width = 6,
                                  plotlyOutput("view_scatter_age") %>% withSpinner(color = "#1E90FF"),
                                  hr()
+                                 
                           ),
                           column(width = 6,
-                                 plotlyOutput("view_scatter_unemployment") %>% withSpinner(color = "#1E90FF")
+                                 plotlyOutput("view_scatter_unemployment") %>% withSpinner(color = "#1E90FF"),
+                                 hr()
                           ),
                           column(width = 6,
-                                 plotlyOutput("view_scatter_salary") %>% withSpinner(color = "#1E90FF")
+                                 plotlyOutput("view_scatter_salary") %>% withSpinner(color = "#1E90FF"),
+                                 hr()
                           ),
                           column(width = 6,
-                                 plotlyOutput("view_scatter_immigrants") %>% withSpinner(color = "#1E90FF")
+                                 plotlyOutput("view_scatter_immigrants") %>% withSpinner(color = "#1E90FF"),
+                                 hr()
                           ),
                           
                           column(width = 6,
-                                 plotlyOutput("view_scatter_temp") %>% withSpinner(color = "#1E90FF")
+                                 plotlyOutput("view_scatter_poverty") %>% withSpinner(color = "#1E90FF"),
+                                 hr()
                           ),
                           column(width = 6,
-                                 plotlyOutput("view_scatter_poverty") %>% withSpinner(color = "#1E90FF")
+                                 plotlyOutput("view_scatter_life") %>% withSpinner(color = "#1E90FF"),
+                                 hr()
                           ),
                           column(width = 6,
-                                 plotlyOutput("view_scatter_life") %>% withSpinner(color = "#1E90FF")
+                                 plotlyOutput("view_scatter_whitecollar") %>% withSpinner(color = "#1E90FF")
+                                 
                           ),
+                          column(width = 6,
+                                 plotlyOutput("view_scatter_education") %>% withSpinner(color = "#1E90FF")
+                          )
                         )
                       )
              )
@@ -240,7 +247,8 @@ server <- function(input, output) {
       temp,
       poverty,
       life,
-      education
+      education,
+      d2_k
     ) %>% 
       reduce(left_join)
     
@@ -248,13 +256,13 @@ server <- function(input, output) {
       left_join(., unemployement, by= "code")
     
     #map
-    pal <- colorBin("magma", df_color$percent_vote, 8, pretty = FALSE)
+    pal <- colorBin("magma", df_color$percent_vote, 8, pretty = T)
     #pal <- colorNumeric("Purples", domain = df_color$percent_vote) #choosing the color palette for the main plot
     pal2 <- colorFactor(palette = c("#AA0000", "#057C85", "#808080" ,"#0087cd", "#0066CC",
                                     "#ed1651", "#ADC1FD", "#004A77", "#FFD600", "#C9462C", "Snow3"), 
                         levels = c("ARTHAUD", "ASSELINEAU", "CHEMINADE", "DUPONT-AIGNAN", "FILLON", 
                                    "HAMON", "LASSALLE", "LE PEN", "MACRON", "MÉLENCHON", "POUTOU"))
-
+    
     pal3 <- colorBin("inferno", df_merged$unemployment_rate, 4, pretty = T)   
     pal4 <- colorBin("inferno", df_merged$percent_imm_dep, 8, pretty = T)
     pal5 <- colorFactor(palette = c("#8B0000", "#FF0000", "#FF4500" ,"#FF8C00", "#FFFFCC",
@@ -265,7 +273,9 @@ server <- function(input, output) {
     pal6 <- colorFactor(palette = c("#FF6600", "#FF9900","#FFCC66" ), levels = c(">21" , "14.5 - 21", "14.5>"))
     pal7 <- colorBin("inferno", df_merged$avg_life, 3, pretty = T)
     pal8 <- colorFactor(palette = c("#FF6600", "#FF9900","#FFCC66" ), levels = c(">=18.8" , "17.2 - 18.8", "17.2=<"))
-
+    pal9 <- colorBin("inferno", df_merged$whitecol_rate, 4, pretty = T)   
+    pal10 <- colorBin("inferno", df_merged$elderly_rate, 4, pretty = T)   
+    
     
     
     #making popups on the map (paste0 can get both variables and words)
@@ -279,8 +289,10 @@ server <- function(input, output) {
              pop7= paste0("Average Temp. at ", df_merged$nom, ": ", df_merged$tmoy),
              pop8 = paste0("Poverty Rate at ", df_merged$nom, ": ", df_merged$poverty_rate),
              pop9= paste0("Avg. Life Expectancy at ", df_merged$nom, ": ", df_merged$avg_life),
-             pop10 = paste0("People with the Highest Education % at ", df_merged$nom, ": ", df_merged$edu_int)
-             )
+             pop10 = paste0("People with the Highest Education % at ", df_merged$nom, ": ", df_merged$edu_int),
+             pop11 = paste0("Whitecolar Rate at", df_merged$nom, ": ", df_merged$whitecol_rate),
+             pop12 = paste0("Elderly Rate at", df_merged$nom, ": ", df_merged$elderly_rate)
+      )
     
     popup_sb <- df4$pop1
     #df_merged$nom2 <- df_merged$nom
@@ -415,6 +427,36 @@ server <- function(input, output) {
                     style = list("font-weight" = "normal", padding = "3px 8px"),
                     textsize = "15px",
                     direction = "auto")) %>%
+      addPolygons(data = df_merged, fillColor = ~pal9(df_merged$whitecol_rate), #layerId= ~nom,
+                  fillOpacity = 0.7,
+                  group = "White Collar Rate",
+                  weight = 0.2,
+                  smoothFactor = 0.2,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    fillOpacity = 0.2,
+                    bringToFront = TRUE),
+                  label=df4$pop11,
+                  labelOptions = labelOptions(
+                    style = list("font-weight" = "normal", padding = "3px 8px"),
+                    textsize = "15px",
+                    direction = "auto")) %>%
+      addPolygons(data = df_merged, fillColor = ~pal10(df_merged$elderly_rate), #layerId= ~nom,
+                  fillOpacity = 0.7,
+                  group = "Elderly Rate",
+                  weight = 0.2,
+                  smoothFactor = 0.2,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    fillOpacity = 0.2,
+                    bringToFront = TRUE),
+                  label=df4$pop12,
+                  labelOptions = labelOptions(
+                    style = list("font-weight" = "normal", padding = "3px 8px"),
+                    textsize = "15px",
+                    direction = "auto")) %>%
       addLegend(pal = pal, group = "Votes" , values = df_merged$percent_vote, title = "Vote %", opacity = 0.7,
                 labFormat = labelFormat(suffix = " %")) %>%
       addLegend(pal = pal3, group = "Unemployment Rate" , values = df_merged$unemployment_rate, title = "Unemployment Rate %", opacity = 0.7,
@@ -426,15 +468,17 @@ server <- function(input, output) {
       addLegend(pal = pal7, group = "Avg. Life Expectancy" , values = df_merged$avg_life, title = "Avg. Life Expectancy" ,opacity = 0.7) %>%
       addLegend(pal = pal8, group = "Share of People with the Highest Education" , values = df_merged$edu_int, title = "Education Rate %", opacity = 0.7,
                 labFormat = labelFormat(suffix = " %")) %>%
+      addLegend(pal = pal9, group = "White Collar Rate" , values = df_merged$whitecol_rate, title = "White Collar Rate %" ,opacity = 0.7, labFormat = labelFormat(suffix = " %")) %>%
+      addLegend(pal = pal10, group = "Elderly Rate" , values = df_merged$elderly_rate, title = "Elderly Rate %" ,opacity = 0.7, labFormat = labelFormat(suffix = " %")) %>%
       addLayersControl(
         overlayGroups = c( "Votes", "First Candidate", "Population","Immigrants", "Mean Wage","Unemployment Rate", 
                            "Average Temprature", "Poverty Rate", "Avg. Life Expectancy",
-                           "Share of People with the Highest Education"),
+                           "Share of People with the Highest Education", "Elderly Rate", "White Collar Rate"),
         options = layersControlOptions(collapsed = T),
         position = "bottomleft"
       ) %>% hideGroup(c("Population","Mean Wage", "First Candidate", "Unemployment Rate", "Immigrants",
                         "Average Temprature", "Poverty Rate", "Avg. Life Expectancy",
-                        "Share of People with the Highest Education"))
+                        "Share of People with the Highest Education", "Elderly Rate", "White Collar Rate"))
     
     
   }) 
@@ -511,7 +555,7 @@ server <- function(input, output) {
              pop5= paste0("Immigrants at " ,df_map$COM_NAME, ": ", df_map$imm_percent),
              #pop4 = paste0("Average Salary: " ,round(df_map$mean_salary_com, 1), " €/hr at ", df_map$COM_NAME),
              pop6= paste0("Unemployment Rate: ", round(df_map$unemp_rate, 1), "% at ", df_map$COM_NAME))
-             #pop7 = paste0("Number of first-generation immigrants: ", df_map$foriegner, " at ", df_map$COM_NAME))
+    #pop7 = paste0("Number of first-generation immigrants: ", df_map$foriegner, " at ", df_map$COM_NAME))
     
     
     leaflet() %>%
@@ -561,22 +605,22 @@ server <- function(input, output) {
                     style = list("font-weight" = "normal", padding = "3px 8px"),
                     textsize = "15px",
                     direction = "auto"))  %>%
-    
-    addPolygons(data = df_map, fillColor = ~pal5(imm_percent), #layerId= ~percent_vote,
-                fillOpacity = 0.7,
-                group = "Immigrants",
-                weight = 0.2,
-                smoothFactor = 0.2,
-                highlight = highlightOptions(
-                  weight = 5,
-                  color = "#666",
-                  fillOpacity = 0.2,
-                  bringToFront = TRUE),
-                label=df4$pop5,
-                labelOptions = labelOptions(
-                  style = list("font-weight" = "normal", padding = "3px 8px"),
-                  textsize = "15px",
-                  direction = "auto"))  %>%
+      
+      addPolygons(data = df_map, fillColor = ~pal5(imm_percent), #layerId= ~percent_vote,
+                  fillOpacity = 0.7,
+                  group = "Immigrants",
+                  weight = 0.2,
+                  smoothFactor = 0.2,
+                  highlight = highlightOptions(
+                    weight = 5,
+                    color = "#666",
+                    fillOpacity = 0.2,
+                    bringToFront = TRUE),
+                  label=df4$pop5,
+                  labelOptions = labelOptions(
+                    style = list("font-weight" = "normal", padding = "3px 8px"),
+                    textsize = "15px",
+                    direction = "auto"))  %>%
       addPolygons(data = df_map, fillColor = ~pal6(unemp_rate), #layerId= ~percent_vote,
                   fillOpacity = 0.7,
                   group = "Unemployment Rate",
@@ -629,7 +673,9 @@ server <- function(input, output) {
       df_imm_dep,
       temp,
       poverty,
-      life
+      life, 
+      d2_k,
+      education
     ) %>% 
       reduce(left_join)
     
@@ -641,17 +687,17 @@ server <- function(input, output) {
   })
   
   #Scatter plots
-  output$view_scatter <- renderPlotly({ # Vote vs Pop
-    
-    plot1 <- df_merged() %>% 
-      ggplot(aes(x=pop, y=percent_vote)) + geom_point(aes(text = nom)) + geom_smooth(method = "lm")+
-      theme_minimal() +
-      ggtitle(paste0("Vote - Population (in deparments)") ) +
-      labs(x="Population (x 1000)", y="Vote %")
-    
-    ggplotly(plot1, tooltip = "text")
-    
-  }) 
+  #  output$view_scatter <- renderPlotly({ # Vote vs Pop
+  #    
+  #    plot1 <- df_merged() %>% 
+  #      ggplot(aes(x=pop, y=percent_vote)) + geom_point(aes(text = nom)) + geom_smooth(method = "lm")+
+  #      theme_minimal() +
+  #      ggtitle(paste0("Vote - Population (in deparments)") ) +
+  #      labs(x="Population (x 1000)", y="Vote %")
+  #    
+  #    ggplotly(plot1, tooltip = "text")
+  #    
+  #  }) 
   
   
   output$view_scatter_age <- renderPlotly({ # Vote vs age
@@ -678,7 +724,7 @@ server <- function(input, output) {
     
     p <- ggplot(data = test1, aes(x= mean_age, y= percent_vote))+geom_point(aes(text = nom))+
       geom_smooth(method = "lm")+ theme_minimal() +
-      ggtitle(paste0("Vote - mean age (in deparments)") ) +
+      ggtitle(paste0("Vote - Average Age (in deparments)") ) +
       labs(x = "Average age" , y = "Vote %")
     
     
@@ -728,20 +774,20 @@ server <- function(input, output) {
     
   }) 
   
-  output$view_scatter_temp <- renderPlotly({ #Vote vs temp
-    
-    plot1 <- df_merged() %>% 
-      ggplot(aes(x=tmoy, y=percent_vote)) + geom_point(aes(text = nom)) + geom_smooth()+
-      theme_minimal() +
-      ggtitle(paste0("Vote - Temprature (in departments)") ) +
-      labs(x="Average Temprature (°C)", y="Vote %")
-    
-    
-    ggplotly(plot1, tooltip = "text")
-    
-    
-    
-  })  
+  #  output$view_scatter_temp <- renderPlotly({ #Vote vs temp
+  #    
+  #    plot1 <- df_merged() %>% 
+  #      ggplot(aes(x=tmoy, y=percent_vote)) + geom_point(aes(text = nom)) + geom_smooth()+
+  #      theme_minimal() +
+  #      ggtitle(paste0("Vote - Temprature (in departments)") ) +
+  #      labs(x="Average Temprature (°C)", y="Vote %")
+  #    
+  #    
+  #    ggplotly(plot1, tooltip = "text")
+  #    
+  #    
+  #    
+  #  })  
   output$view_scatter_poverty <- renderPlotly({ #Vote vs poverty
     
     plot1 <- df_merged() %>% 
@@ -767,10 +813,30 @@ server <- function(input, output) {
     
     
     ggplotly(plot1, tooltip = "text")
+  })
+  
+  output$view_scatter_education <- renderPlotly({ #Vote vs Higher Education
+    
+    plot1 <- df_merged() %>% 
+      ggplot(aes(x=people_education, y=percent_vote)) + geom_point(aes(text = nom)) + geom_smooth(method = "lm")+
+      theme_minimal() +
+      ggtitle(paste0("Vote - Higher Education Rate (in departments)") ) +
+      labs(x="Higher Education %", y="Vote %")
     
     
-    
+    ggplotly(plot1, tooltip = "text")
   })  
+  output$view_scatter_whitecollar <- renderPlotly({ #Vote vs White Collar
+    
+    plot1 <- df_merged() %>% 
+      ggplot(aes(x=whitecol_rate, y=percent_vote)) + geom_point(aes(text = nom)) + geom_smooth(method = "lm")+
+      theme_minimal() +
+      ggtitle(paste0("Vote - White Collar Rate (in departments)") ) +
+      labs(x="White Collar%", y="Vote %")
+    
+    
+    ggplotly(plot1, tooltip = "text")
+  })   
 }#end of server
 
 # Run the application
